@@ -1,13 +1,13 @@
 # Binaries
-bin/
+/bin/
 *.exe
 /driftwarden
 /driftwarden-*
 
 # LocalStack & Evidence
-.localstack/
-.driftwarden/
-evidence/
+/.localstack/
+/.driftwarden/
+/evidence/
 
 # OS artifacts
 .DS_Store
