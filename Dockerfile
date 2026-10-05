@@ -1,5 +1,5 @@
 # Multi-stage distroless build for DriftWarden (< 25MB final image)
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /src
 
