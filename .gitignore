@@ -1,8 +1,8 @@
 # Binaries
 bin/
 *.exe
-driftwarden
-driftwarden-*
+/driftwarden
+/driftwarden-*
 
 # LocalStack & Evidence
 .localstack/
