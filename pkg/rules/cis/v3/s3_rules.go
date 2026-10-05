@@ -32,10 +32,6 @@ func (r *DWCIS_S3_001) EvaluateResource(res models.CanonicalResource) (bool, mod
 	}
 
 	attrs := res.Attributes
-	bucketName := res.ProviderID
-	if bucketName == "" {
-		bucketName = res.Name
-	}
 	remediation := fmt.Sprintf("aws s3control put-public-access-block --account-id %s --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true", res.AccountID)
 
 	if attrs == nil {

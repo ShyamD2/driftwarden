@@ -72,7 +72,7 @@ func CheckLock(ctx context.Context, client DynamoDBAPI, tableName, lockID string
 		return nil, false, fmt.Errorf("failed to query DynamoDB lock table %s: %w", tableName, err)
 	}
 
-	if resp.Item == nil || len(resp.Item) == 0 {
+	if len(resp.Item) == 0 {
 		return nil, false, nil
 	}
 

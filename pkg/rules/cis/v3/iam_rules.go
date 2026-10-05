@@ -29,13 +29,6 @@ func (r *DWCIS_IAM_001) Description() string {
 	return "Ensure IAM role policy documents do not permit unrestricted administrative action wildcarding (*)"
 }
 
-type policyStatement struct {
-	Effect    string `json:"Effect"`
-	Action    any    `json:"Action"`
-	Resource  any    `json:"Resource"`
-	Principal any    `json:"Principal"`
-}
-
 type policyDoc struct {
 	Statement any `json:"Statement"`
 }
