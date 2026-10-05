@@ -1,0 +1,130 @@
+name: 'DriftWarden AWS Infrastructure Drift & Security Audit'
+description: 'High-precision three-source AWS drift detection, CIS compliance audit, and automated remediation'
+author: 'ShyamD2'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  tfstate:
+    description: 'Path to local terraform.tfstate file'
+    required: false
+    default: 'terraform.tfstate'
+  hcl-dir:
+    description: 'Path to Terraform root directory'
+    required: false
+    default: '.'
+  regions:
+    description: 'Comma-separated target AWS regions'
+    required: false
+    default: 'us-east-1'
+  fail-on-drift:
+    description: 'Fail CI/CD job with exit code 2 if drift is detected'
+    required: false
+    default: 'false'
+  fail-on-critical:
+    description: 'Fail CI/CD job with exit code 2 if CRITICAL security violation is detected'
+    required: false
+    default: 'true'
+  save-evidence-dir:
+    description: 'Directory to persist audit evidence bundle'
+    required: false
+    default: '.driftwarden/evidence'
+  comment-pr:
+    description: 'Post sticky comment on Pull Request with collapsible audit table'
+    required: false
+    default: 'true'
+  github-token:
+    description: 'GitHub token for PR comment integration'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  total-scanned:
+    description: 'Total cloud resources audited'
+    value: ${{ steps.audit.outputs.total_scanned }}
+  total-drift:
+    description: 'Total drift discrepancies detected'
+    value: ${{ steps.audit.outputs.total_drift }}
+  audit-status:
+    description: 'Final audit status (COMPLETE, PARTIAL_SCAN, FAILED)'
+    value: ${{ steps.audit.outputs.status }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    - name: Build DriftWarden Binary
+      shell: bash
+      run: |
+        go build -o /usr/local/bin/driftwarden ./cmd/driftwarden
+
+    - name: Execute DriftWarden Scan
+      id: audit
+      shell: bash
+      run: |
+        mkdir -p "${{ inputs.save-evidence-dir }}"
+        
+        FAIL_DRIFT_FLAG=""
+        if [[ "${{ inputs.fail-on-drift }}" == "true" ]]; then
+          FAIL_DRIFT_FLAG="--fail-on-drift"
+        fi
+        
+        FAIL_CRIT_FLAG=""
+        if [[ "${{ inputs.fail-on-critical }}" == "true" ]]; then
+          FAIL_CRIT_FLAG="--fail-on-critical"
+        fi
+
+        driftwarden scan \
+          --tfstate "${{ inputs.tfstate }}" \
+          --hcl-dir "${{ inputs.hcl-dir }}" \
+          --regions "${{ inputs.regions }}" \
+          --format json \
+          --output "${{ inputs.save-evidence-dir }}/scan-results.json" \
+          --save-evidence-dir "${{ inputs.save-evidence-dir }}" \
+          ${FAIL_DRIFT_FLAG} \
+          ${FAIL_CRIT_FLAG} || SCAN_EXIT=$?
+          
+        echo "scan_exit=${SCAN_EXIT:-0}" >> $GITHUB_OUTPUT
+
+    - name: Generate PR Sticky Comment
+      if: inputs.comment-pr == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require('fs');
+          const path = '${{ inputs.save-evidence-dir }}/scan-results.json';
+          if (!fs.existsSync(path)) return;
+          
+          const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+          let body = `### 🛡️ DriftWarden Infrastructure & Security Audit Report\n\n`;
+          body += `**Scan ID**: \`${report.scan_id}\` | **Status**: **${report.status}**\n\n`;
+          body += `| Total Scanned | Total Drift | Access Denied | Execution Time |\n`;
+          body += `|---------------|-------------|---------------|----------------|\n`;
+          body += `| ${report.total_scanned} | ${report.total_drift} | ${report.access_denied_count} | ${report.execution_time_ms} ms |\n\n`;
+          
+          if (report.items && report.items.length > 0) {
+            body += `<details><summary><b>⚠️ Detected Divergences & Findings (${report.items.length})</b></summary>\n\n`;
+            body += `| Resource ID | Type | Drift Type | Severity | CIS Rule | Monthly Waste |\n`;
+            body += `|-------------|------|------------|----------|----------|---------------|\n`;
+            for (const item of report.items) {
+              const rule = item.cis_rule_id || '-';
+              const cost = item.cost ? `$${item.cost.amount_monthly.toFixed(2)}` : '-';
+              body += `| \`${item.resource.provider_id || item.resource.name}\` | \`${item.resource.type}\` | ${item.drift_type} | **${item.severity}** | ${rule} | ${cost} |\n`;
+            }
+            body += `\n</details>\n`;
+          } else {
+            body += `✅ **Zero drift detected.** Infrastructure is 100% in sync with desired state.\n`;
+          }
+          
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });

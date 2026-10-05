@@ -1,0 +1,114 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.7",
+  "serial": 42,
+  "lineage": "e6783995-8fc2-48f8-b3d5-39d391ad59bb",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "aws_vpc",
+      "name": "main",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-east-1:123456789012:vpc/vpc-0123456789",
+            "cidr_block": "10.0.0.0/16",
+            "enable_dns_hostnames": true,
+            "enable_dns_support": true,
+            "id": "vpc-0123456789",
+            "tags": {
+              "Environment": "production",
+              "Name": "main-vpc"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_subnet",
+      "name": "public",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-0123456789",
+            "cidr_block": "10.0.1.0/24",
+            "id": "subnet-0123456789",
+            "map_public_ip_on_launch": true,
+            "tags": {
+              "Name": "public-subnet-1"
+            },
+            "vpc_id": "vpc-0123456789"
+          }
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_security_group",
+      "name": "web",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-east-1:123456789012:security-group/sg-0123456789",
+            "description": "Security group for web instances",
+            "id": "sg-0123456789",
+            "name": "web-sg",
+            "tags": {
+              "Name": "web-sg"
+            },
+            "vpc_id": "vpc-0123456789"
+          }
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_instance",
+      "name": "web_server",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "ami": "ami-0c55b159cbfafe1f0",
+            "arn": "arn:aws:ec2:us-east-1:123456789012:instance/i-0123456789",
+            "id": "i-0123456789",
+            "instance_type": "t3.micro",
+            "subnet_id": "subnet-0123456789",
+            "tags": {
+              "Environment": "production",
+              "Name": "web-server-prod"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_s3_bucket",
+      "name": "assets",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:s3:::company-assets-prod-123456",
+            "bucket": "company-assets-prod-123456",
+            "id": "company-assets-prod-123456",
+            "tags": {
+              "Purpose": "static-assets"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

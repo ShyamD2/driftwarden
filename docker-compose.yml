@@ -1,0 +1,15 @@
+services:
+  localstack:
+    container_name: driftwarden-localstack
+    image: localstack/localstack:3.7.2
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    environment:
+      - SERVICES=ec2,s3,iam,dynamodb,cloudcontrol
+      - AWS_DEFAULT_REGION=us-east-1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - DEBUG=0
+    volumes:
+      - "${LOCALSTACK_VOLUME_DIR:-./.localstack}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
