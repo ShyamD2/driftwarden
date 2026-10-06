@@ -144,5 +144,6 @@ type ScanReport struct {
 	Items               []DriftItem       `json:"items"`
 	Summary             map[DriftType]int `json:"summary"`
 	ExecutionTimeMs     int64             `json:"execution_time_ms"`
+	StateHash           string            `json:"state_hash,omitempty"`
 	APIEfficiency       *APIEfficiency    `json:"api_efficiency,omitempty"`
 }

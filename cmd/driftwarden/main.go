@@ -16,12 +16,13 @@ import (
 	"github.com/ShyamD2/driftwarden/pkg/models"
 	"github.com/ShyamD2/driftwarden/pkg/printer"
 	"github.com/ShyamD2/driftwarden/pkg/reconcile"
+	dwVersion "github.com/ShyamD2/driftwarden/pkg/version"
 )
 
 var (
-	version   = "1.0.0"
-	gitCommit = "dev"
-	buildDate = "2026-10-05"
+	version   = dwVersion.GetVersion()
+	gitCommit = dwVersion.GetGitCommit()
+	buildDate = dwVersion.BuildDate
 )
 
 func main() {

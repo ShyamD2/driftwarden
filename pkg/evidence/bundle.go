@@ -13,12 +13,16 @@ import (
 	"time"
 
 	"github.com/ShyamD2/driftwarden/pkg/models"
+	"github.com/ShyamD2/driftwarden/pkg/version"
 )
 
 // Manifest defines the inventory, provenance, and cryptographic integrity metadata.
 type Manifest struct {
 	SchemaVersion  string            `json:"schema_version"`
 	ToolVersion    string            `json:"tool_version"`
+	GitCommit      string            `json:"git_commit"`
+	StateHash      string            `json:"state_hash"`
+	ResourceCount  int               `json:"resource_count"`
 	ScanID         string            `json:"scan_id"`
 	Timestamp      string            `json:"timestamp"`
 	AccountID      string            `json:"account_id"`
@@ -51,10 +55,59 @@ type ProvenanceReport struct {
 	Findings    []FindingProvenance `json:"findings"`
 }
 
+type bundleOptions struct {
+	gitCommit  string
+	stateBytes []byte
+	stateHash  string
+}
+
+// BundleOption configures evidence bundle packaging.
+type BundleOption func(*bundleOptions)
+
+// WithGitCommit explicitly overrides the git commit recorded in the manifest.
+func WithGitCommit(commit string) BundleOption {
+	return func(o *bundleOptions) {
+		o.gitCommit = commit
+	}
+}
+
+// WithStateContent supplies the raw tfstate content bytes and computes its SHA-256 state_hash.
+func WithStateContent(content []byte) BundleOption {
+	return func(o *bundleOptions) {
+		o.stateBytes = content
+		o.stateHash = ComputeStateHash(content)
+	}
+}
+
+// WithStateHash explicitly sets the state_hash hexadecimal string.
+func WithStateHash(hash string) BundleOption {
+	return func(o *bundleOptions) {
+		o.stateHash = hash
+	}
+}
+
+// ComputeStateHash calculates the SHA-256 hex digest of terraform state content.
+func ComputeStateHash(data []byte) string {
+	h := sha256.Sum256(data)
+	return hex.EncodeToString(h[:])
+}
+
+// HashBytes computes the SHA-256 hex digest of arbitrary bytes.
+func HashBytes(data []byte) string {
+	return ComputeStateHash(data)
+}
+
 // SaveEvidenceBundle writes comprehensive forensic artifacts to targetDir.
-func SaveEvidenceBundle(targetDir string, report *models.ScanReport, allResources []models.CanonicalResource) error {
+func SaveEvidenceBundle(targetDir string, report *models.ScanReport, allResources []models.CanonicalResource, opts ...BundleOption) error {
 	if report == nil {
 		return fmt.Errorf("report is nil")
+	}
+
+	var optCfg bundleOptions
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&optCfg)
+		}
 	}
 
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
@@ -141,10 +194,40 @@ func SaveEvidenceBundle(targetDir string, report *models.ScanReport, allResource
 	}
 	checksums["schema_version.txt"] = hashBytes(schemaVersionBytes)
 
+	// Determine metadata for manifest
+	toolVer := report.ToolVersion
+	if toolVer == "" {
+		toolVer = version.GetVersion()
+	}
+
+	commit := optCfg.gitCommit
+	if commit == "" {
+		commit = version.GetGitCommit()
+	}
+	if commit == "" {
+		commit = "dev"
+	}
+
+	stateHash := optCfg.stateHash
+	if stateHash == "" && report.StateHash != "" {
+		stateHash = report.StateHash
+	}
+	if stateHash == "" {
+		if content, err := os.ReadFile("terraform.tfstate"); err == nil {
+			stateHash = ComputeStateHash(content)
+		}
+	}
+	if stateHash == "" {
+		stateHash = ComputeStateHash([]byte{})
+	}
+
 	// 5. manifest.json
 	manifest := Manifest{
 		SchemaVersion:  "1.0.0",
-		ToolVersion:    report.ToolVersion,
+		ToolVersion:    toolVer,
+		GitCommit:      commit,
+		StateHash:      stateHash,
+		ResourceCount:  len(allResources),
 		ScanID:         report.ScanID,
 		Timestamp:      report.Timestamp,
 		AccountID:      report.AccountID,
@@ -228,7 +311,20 @@ func LoadEvidenceBundle(targetDir string) (*models.ScanReport, []models.Canonica
 	return &report, resources, scanner.Err()
 }
 
+// LoadManifest reads and deserializes the manifest.json from targetDir.
+func LoadManifest(targetDir string) (*Manifest, error) {
+	manifestPath := filepath.Join(targetDir, "manifest.json")
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read manifest.json from evidence dir: %w", err)
+	}
+	var manifest Manifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal manifest.json: %w", err)
+	}
+	return &manifest, nil
+}
+
 func hashBytes(data []byte) string {
-	h := sha256.Sum256(data)
-	return hex.EncodeToString(h[:])
+	return HashBytes(data)
 }

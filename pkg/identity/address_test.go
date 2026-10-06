@@ -40,6 +40,34 @@ func TestParseTerraformAddress(t *testing.T) {
 			expectedKey:  "a",
 			expectedMod:  "module.vpc",
 		},
+		{
+			address:      `module.vpc.module.subnets.aws_subnet.public`,
+			expectedType: "aws_subnet",
+			expectedName: "public",
+			expectedKey:  "",
+			expectedMod:  "module.vpc.module.subnets",
+		},
+		{
+			address:      `module.vpc.module.subnets.aws_subnet.public[0]`,
+			expectedType: "aws_subnet",
+			expectedName: "public",
+			expectedKey:  "0",
+			expectedMod:  "module.vpc.module.subnets",
+		},
+		{
+			address:      `aws_s3_bucket.buckets["data"]`,
+			expectedType: "aws_s3_bucket",
+			expectedName: "buckets",
+			expectedKey:  "data",
+			expectedMod:  "",
+		},
+		{
+			address:      `aws_instance.web[0]`,
+			expectedType: "aws_instance",
+			expectedName: "web",
+			expectedKey:  "0",
+			expectedMod:  "",
+		},
 	}
 
 	for _, tt := range tests {

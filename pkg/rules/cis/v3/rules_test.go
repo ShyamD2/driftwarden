@@ -429,3 +429,183 @@ func TestCIS_VPC_DefaultSecurityGroup(t *testing.T) {
 		t.Fatalf("expected non-default SG to be ignored by DW-CIS-VPC-001")
 	}
 }
+
+func TestCIS_KMS_KeyRotation_Rule(t *testing.T) {
+	rule := NewDWCIS_KMS_001()
+
+	if rule.ID() != "DW-CIS-KMS-001" {
+		t.Errorf("expected ID DW-CIS-KMS-001, got %s", rule.ID())
+	}
+
+	// 1. Violation: key_rotation_enabled = false
+	badKey := models.CanonicalResource{
+		CanonicalID: "aws:aws:kms:us-east-1:123456789012:key/key-bad-123",
+		Type:        "aws_kms_key",
+		ProviderID:  "key-bad-123",
+		Attributes: map[string]any{
+			"key_rotation_enabled": false,
+		},
+	}
+	violation, sev, ev, rem, err := rule.EvaluateResource(badKey)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !violation {
+		t.Fatalf("expected DW-CIS-KMS-001 violation for KMS key with key_rotation_enabled=false")
+	}
+	if sev != models.SeverityHigh {
+		t.Errorf("expected HIGH severity, got %v", sev)
+	}
+	if ev == "" {
+		t.Errorf("expected non-empty evidence")
+	}
+	expectedRem := "aws kms enable-key-rotation --key-id key-bad-123"
+	if rem != expectedRem {
+		t.Errorf("expected remediation %q, got %q", expectedRem, rem)
+	}
+
+	// 2. Violation: CFN type AWS::KMS::Key with missing attributes
+	badCFNKey := models.CanonicalResource{
+		CanonicalID: "aws:aws:kms:us-east-1:123456789012:key/cfn-key-456",
+		Type:        "AWS::KMS::Key",
+		ProviderID:  "cfn-key-456",
+		Attributes:  nil,
+	}
+	violation, sev, _, _, _ = rule.EvaluateResource(badCFNKey)
+	if !violation {
+		t.Fatalf("expected DW-CIS-KMS-001 violation for KMS key with nil attributes")
+	}
+	if sev != models.SeverityHigh {
+		t.Errorf("expected HIGH severity, got %v", sev)
+	}
+
+	// 3. Safe: key_rotation_enabled = true
+	safeKey := models.CanonicalResource{
+		CanonicalID: "aws:aws:kms:us-east-1:123456789012:key/key-safe-789",
+		Type:        "aws_kms_key",
+		ProviderID:  "key-safe-789",
+		Attributes: map[string]any{
+			"key_rotation_enabled": true,
+		},
+	}
+	violation, _, _, _, _ = rule.EvaluateResource(safeKey)
+	if violation {
+		t.Fatalf("expected safe KMS key to pass DW-CIS-KMS-001")
+	}
+
+	// 4. Safe: enable_key_rotation = true (TF alias)
+	safeAliasKey := models.CanonicalResource{
+		CanonicalID: "aws:aws:kms:us-east-1:123456789012:key/key-alias-789",
+		Type:        "aws_kms_key",
+		ProviderID:  "key-alias-789",
+		Attributes: map[string]any{
+			"enable_key_rotation": true,
+		},
+	}
+	violation, _, _, _, _ = rule.EvaluateResource(safeAliasKey)
+	if violation {
+		t.Fatalf("expected safe KMS key with enable_key_rotation=true to pass DW-CIS-KMS-001")
+	}
+
+	// 5. Unrelated resource type should be ignored
+	unrelated := models.CanonicalResource{
+		Type: "aws_s3_bucket",
+	}
+	violation, _, _, _, _ = rule.EvaluateResource(unrelated)
+	if violation {
+		t.Fatalf("expected non-KMS resource to be ignored by DW-CIS-KMS-001")
+	}
+}
+
+func TestCIS_ECR_ScanOnPush_Rule(t *testing.T) {
+	rule := NewDWCIS_ECR_001()
+
+	if rule.ID() != "DW-CIS-ECR-001" {
+		t.Errorf("expected ID DW-CIS-ECR-001, got %s", rule.ID())
+	}
+
+	// 1. Violation: image_scanning_configuration.scan_on_push = false
+	badRepo := models.CanonicalResource{
+		CanonicalID: "aws:aws:ecr:us-east-1:123456789012:repository/my-app-repo",
+		Type:        "aws_ecr_repository",
+		ProviderID:  "my-app-repo",
+		Attributes: map[string]any{
+			"image_scanning_configuration": map[string]any{
+				"scan_on_push": false,
+			},
+		},
+	}
+	violation, sev, ev, rem, err := rule.EvaluateResource(badRepo)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !violation {
+		t.Fatalf("expected DW-CIS-ECR-001 violation for ECR repo with scan_on_push=false")
+	}
+	if sev != models.SeverityMedium {
+		t.Errorf("expected MEDIUM severity, got %v", sev)
+	}
+	if ev == "" {
+		t.Errorf("expected non-empty evidence")
+	}
+	expectedRem := "aws ecr put-image-scanning-configuration --repository-name my-app-repo --image-scanning-configuration scanOnPush=true"
+	if rem != expectedRem {
+		t.Errorf("expected remediation %q, got %q", expectedRem, rem)
+	}
+
+	// 2. Violation: CFN type AWS::ECR::Repository with missing scan on push
+	badCFNRepo := models.CanonicalResource{
+		CanonicalID: "aws:aws:ecr:us-east-1:123456789012:repository/cfn-repo",
+		Type:        "AWS::ECR::Repository",
+		Name:        "cfn-repo",
+		Attributes:  map[string]any{},
+	}
+	violation, sev, _, _, _ = rule.EvaluateResource(badCFNRepo)
+	if !violation {
+		t.Fatalf("expected DW-CIS-ECR-001 violation for ECR repo without scan_on_push")
+	}
+	if sev != models.SeverityMedium {
+		t.Errorf("expected MEDIUM severity, got %v", sev)
+	}
+
+	// 3. Safe: image_scanning_configuration.scan_on_push = true
+	safeRepo := models.CanonicalResource{
+		CanonicalID: "aws:aws:ecr:us-east-1:123456789012:repository/secure-repo",
+		Type:        "aws_ecr_repository",
+		ProviderID:  "secure-repo",
+		Attributes: map[string]any{
+			"image_scanning_configuration": map[string]any{
+				"scan_on_push": true,
+			},
+		},
+	}
+	violation, _, _, _, _ = rule.EvaluateResource(safeRepo)
+	if violation {
+		t.Fatalf("expected safe ECR repository to pass DW-CIS-ECR-001")
+	}
+
+	// 4. Safe: flattened or slice configuration
+	safeRepoSlice := models.CanonicalResource{
+		CanonicalID: "aws:aws:ecr:us-east-1:123456789012:repository/secure-slice-repo",
+		Type:        "aws_ecr_repository",
+		ProviderID:  "secure-slice-repo",
+		Attributes: map[string]any{
+			"image_scanning_configuration": []any{
+				map[string]any{"scan_on_push": true},
+			},
+		},
+	}
+	violation, _, _, _, _ = rule.EvaluateResource(safeRepoSlice)
+	if violation {
+		t.Fatalf("expected safe ECR repo with slice configuration to pass DW-CIS-ECR-001")
+	}
+
+	// 5. Unrelated resource type should be ignored
+	unrelated := models.CanonicalResource{
+		Type: "aws_instance",
+	}
+	violation, _, _, _, _ = rule.EvaluateResource(unrelated)
+	if violation {
+		t.Fatalf("expected non-ECR resource to be ignored by DW-CIS-ECR-001")
+	}
+}

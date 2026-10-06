@@ -26,9 +26,6 @@ func GenerateHCLReconciliation(report *models.ScanReport, outputPath string) ([]
 	sb.WriteString("# Review carefully before running 'terraform plan' or 'terraform apply'\n")
 	sb.WriteString("# ==============================================================================\n\n")
 
-	f := hclwrite.NewEmptyFile()
-	rootBody := f.Body()
-
 	hasSupportedResources := false
 
 	for _, item := range report.Items {
@@ -52,6 +49,9 @@ func GenerateHCLReconciliation(report *models.ScanReport, outputPath string) ([]
 		importID := resolveImportID(res)
 		safeName := sanitizeResourceName(res)
 		resourceAddress := fmt.Sprintf("%s.%s", res.Type, safeName)
+
+		fRes := hclwrite.NewEmptyFile()
+		rootBody := fRes.Body()
 
 		// 2. Synthesize modern Terraform 1.5+ import block
 		importBlock := rootBody.AppendNewBlock("import", nil)
@@ -93,12 +93,21 @@ func GenerateHCLReconciliation(report *models.ScanReport, outputPath string) ([]
 			resBody.SetAttributeValue("tags", cty.MapVal(tagMap))
 		}
 
-		rootBody.AppendNewline()
+		// Confidence and automated PR patch annotations
+		conf, autoEligible, riskWarning := determineActionConfidence(item)
+		if autoEligible {
+			sb.WriteString(fmt.Sprintf("# Resource: %s (%s) [CONFIDENCE: %s] [AUTOMATED_PR_ELIGIBLE]\n", res.Type, res.ProviderID, conf))
+		} else {
+			sb.WriteString(fmt.Sprintf("# Resource: %s (%s) [CONFIDENCE: %s] # REQUIRES_MANUAL_REVIEW\n", res.Type, res.ProviderID, conf))
+			if riskWarning != "" {
+				sb.WriteString(fmt.Sprintf("# Risk Warning: %s\n", riskWarning))
+			}
+		}
+		sb.Write(fRes.Bytes())
+		sb.WriteString("\n")
 	}
 
-	if hasSupportedResources {
-		sb.Write(f.Bytes())
-	}
+	_ = hasSupportedResources
 
 	outBytes := []byte(sb.String())
 

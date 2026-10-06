@@ -124,13 +124,15 @@ flowchart TD
   * `DW-CIS-RDS-001`: Prohibit publicly accessible RDS instances (CRITICAL)
   * `DW-CIS-CT-001`: CloudTrail multi-region logging enabled (HIGH)
   * `DW-CIS-VPC-001`: Default security group restricts all traffic (HIGH)
+  * `DW-CIS-KMS-001`: KMS customer master key rotation enabled (HIGH)
+  * `DW-CIS-ECR-001`: ECR image scanning on push enabled (MEDIUM)
   * `DW-GOV-TAG-001`: Mandatory tagging enforcement (`Environment`, `Owner`, `CostCenter`)
 * 💰 **FinOps On-Demand Cost Bleed Engine**: Computes exact hourly and monthly dollar waste for unmanaged rogue instances, orphaned EBS volumes, and idle unattached Elastic IPs.
 * ⏱️ **Double-Read Consistency Probe**: Automatically re-probes anomalous resources after a configurable delay (`--verify-consistency-delay 2.5s`) to mitigate false alerts caused by AWS eventual consistency.
 * 🔒 **Lock-Aware State Snapshots**: Audits S3-backed states protected by DynamoDB lock tables without deadlocking active CI/CD Terraform pipelines.
 * 🏢 **Multi-Account AWS Organizations Fan-Out**: Automatically discovers all active member accounts in AWS Organizations and runs multi-threaded cross-account audits with token bucket rate limiting.
 * 🛠️ **Capability-Aware Dual Remediation**:
-  * **GitOps Mode**: Generates modern Terraform 1.5+ `import {}` blocks and resource skeletons ready for Pull Requests.
+  * **GitOps Mode**: Generates modern Terraform 1.5+ `import {}` blocks and resource skeletons with confidence scoring (`HIGH`, `MEDIUM`, `LOW`) and multi-layer boundary safeguards.
   * **Revert Mode**: Generates defensive remediation shell scripts (`revert.sh`), runbooks (`revert-plan.md`), and JSON payloads with **strict dry-run safety and zero `eval` execution**.
 
 ---
@@ -380,7 +382,7 @@ Full methodology, iteration count, and raw execution telemetry are tracked in [*
 
 ## 🔒 Safety & Security Guarantees
 
-1. **Strict Read-Only Guarantee**: DriftWarden only executes `Describe*`, `List*`, and `Get*` API calls. Destructive or mutating cloud operations are architecturally prohibited within the core binary.
+1. **Strict Read-Only Guarantee**: DriftWarden only executes `Describe*`, `List*`, and `Get*` API calls. Destructive or mutating cloud operations are architecturally prohibited within the core binary. Mechanically verified in CI via automated AST static analysis (`tests/adversarial/readonly_enforcement_test.go`).
 2. **AccessDenied Invariant**: Permission errors (`ErrAccessDenied`) are strictly quarantined as `PARTIAL_SCAN` (exit code 4) and are never falsely classified as `ErrNotFound`, preventing spurious ghost-resource warnings.
 3. **Sensitive Data Masking**: All passwords, secret tokens, private keys, and auth attributes are masked to `[REDACTED_SENSITIVE]` prior to comparison, logging, or export.
 4. **Defensive Revert Script Integrity**: Revert scripts synthesized by `driftwarden reconcile --mode revert` strictly prohibit `eval`, default to `EXECUTE=false` echo-only mode, and enforce `set -euo pipefail`.
@@ -394,8 +396,10 @@ Full methodology, iteration count, and raw execution telemetry are tracked in [*
 ### Security Documentation & Specifications
 * 🛡️ [**Security Model & Verification Matrix**](docs/security-model.md) — Comprehensive threat defense matrix verified by automated adversarial tests.
 * 🔍 [**STRIDE Threat Model**](docs/threat-model.md) — Threat actor taxonomy, attack surfaces, and mitigations.
+* 📐 [**Normalization Contract Specification**](docs/normalization-spec.md) — Formal specification of 8 core normalization invariants (ordering, type safety, null-awareness, default-equivalence, system tags, sensitive masking, idempotency, determinism).
 * 📦 [**Forensic Evidence Format**](docs/evidence-format.md) — Specification for SHA-256 evidence bundles and provenance records.
 * 🏷️ [**Versioning & Compatibility Policy**](docs/versioning-policy.md) — SemVer 2.0.0, CLI flag stability, and machine schema guarantees.
+* 📜 [**Changelog & Release Notes**](CHANGELOG.md) — Release notes and history adhering to Keep a Changelog.
 
 ---
 

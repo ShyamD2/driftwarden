@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "timestamp": "2026-10-06T13:02:41Z",
+  "timestamp": "2026-10-06T13:43:52Z",
   "total_actions": 3,
   "actions": [
     {
@@ -8,6 +8,15 @@
       "resource_id": "sg-demo-web",
       "canonical_id": "aws:aws:ec2:us-east-1:123456789012:security_group/sg-demo-web",
       "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "safeguards": {
+        "account_id": "123456789012",
+        "region": "us-east-1",
+        "resource_type": "aws_security_group",
+        "validated": true
+      },
+      "automated_pr_eligible": true,
+      "requires_manual_review": false,
       "command": [
         "aws",
         "ec2",
@@ -28,6 +37,15 @@
       "resource_id": "prod-assets-corp-bucket-12345",
       "canonical_id": "aws:aws:s3:::bucket/prod-assets-corp-bucket-12345",
       "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "safeguards": {
+        "account_id": "123456789012",
+        "region": "us-east-1",
+        "resource_type": "aws_s3_bucket",
+        "validated": true
+      },
+      "automated_pr_eligible": true,
+      "requires_manual_review": false,
       "command": [
         "aws",
         "s3api",
@@ -43,6 +61,16 @@
       "resource_id": "i-rogue-shadow-99",
       "canonical_id": "aws:aws:ec2:us-east-1:123456789012:instance/i-rogue-shadow-99",
       "severity": "HIGH",
+      "confidence": "MEDIUM",
+      "safeguards": {
+        "account_id": "123456789012",
+        "region": "us-east-1",
+        "resource_type": "aws_instance",
+        "validated": true
+      },
+      "automated_pr_eligible": false,
+      "requires_manual_review": true,
+      "risk_warning": "Shadow resource mutation has operational impact and requires manual verification before decommission.",
       "command": [
         "aws",
         "ec2",

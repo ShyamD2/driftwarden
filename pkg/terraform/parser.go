@@ -152,7 +152,12 @@ func (sp *StateParser) mapInstanceToCanonical(res StateResource, inst StateInsta
 	addrBuilder.WriteString(".")
 	addrBuilder.WriteString(res.Name)
 	if inst.IndexKey != nil {
-		addrBuilder.WriteString(fmt.Sprintf("[%v]", inst.IndexKey))
+		switch k := inst.IndexKey.(type) {
+		case string:
+			addrBuilder.WriteString(fmt.Sprintf("[\"%s\"]", k))
+		default:
+			addrBuilder.WriteString(fmt.Sprintf("[%v]", k))
+		}
 	}
 	address := addrBuilder.String()
 

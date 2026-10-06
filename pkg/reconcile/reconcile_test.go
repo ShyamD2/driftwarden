@@ -203,3 +203,185 @@ func TestReconcile_SynthesizedHCL_TerraformFmt(t *testing.T) {
 	}
 }
 
+func TestReconcile_ConfidenceAndSafeguards(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	report := &models.ScanReport{
+		Items: []models.DriftItem{
+			// 1. High confidence CIS rule finding
+			{
+				Type:              models.DriftAttribute,
+				Severity:          models.SeverityCritical,
+				CISRuleID:         "DW-CIS-EC2-001",
+				FindingConfidence: 0.95,
+				Capabilities: models.CollectorCapabilities{
+					Discover:  true,
+					Reconcile: true,
+				},
+				Resource: models.CanonicalResource{
+					CanonicalID: "aws:aws:ec2:us-east-1:123456789012:security_group/sg-high-conf",
+					Type:        "aws_security_group",
+					ProviderID:  "sg-high-conf",
+					AccountID:   "123456789012",
+					Region:      "us-east-1",
+				},
+			},
+			// 2. Medium confidence finding (e.g. shadow resource)
+			{
+				Type:              models.DriftShadow,
+				Severity:          models.SeverityHigh,
+				FindingConfidence: 0.70,
+				Capabilities: models.CollectorCapabilities{
+					Discover:  true,
+					Reconcile: true,
+				},
+				Resource: models.CanonicalResource{
+					CanonicalID: "aws:aws:ec2:us-east-1:123456789012:instance/i-medium-shadow",
+					Type:        "aws_instance",
+					ProviderID:  "i-medium-shadow",
+					AccountID:   "123456789012",
+					Region:      "us-east-1",
+				},
+			},
+			// 3. Low confidence finding (< 0.5)
+			{
+				Type:              models.DriftAttribute,
+				Severity:          models.SeverityCritical,
+				CISRuleID:         "DW-CIS-S3-001",
+				FindingConfidence: 0.35,
+				Capabilities: models.CollectorCapabilities{
+					Discover:  true,
+					Reconcile: true,
+				},
+				Resource: models.CanonicalResource{
+					CanonicalID: "aws:aws:s3:::bucket/bucket-low-conf",
+					Type:        "aws_s3_bucket",
+					ProviderID:  "bucket-low-conf",
+					AccountID:   "123456789012",
+					Region:      "us-east-1",
+				},
+			},
+		},
+	}
+
+	plan, err := GenerateRevertArtifacts(report, tmpDir)
+	if err != nil {
+		t.Fatalf("GenerateRevertArtifacts failed: %v", err)
+	}
+
+	if plan.TotalActions != 3 {
+		t.Fatalf("expected 3 actions, got %d", plan.TotalActions)
+	}
+
+	// Action 1: HIGH confidence
+	act1 := plan.Actions[0]
+	if act1.Confidence != ConfidenceHigh {
+		t.Errorf("expected act1 Confidence HIGH, got %s", act1.Confidence)
+	}
+	if !act1.AutomatedPREligible {
+		t.Errorf("expected act1 to be marked AutomatedPREligible")
+	}
+	if act1.RequiresManualReview {
+		t.Errorf("expected act1 to NOT require manual review")
+	}
+	if act1.Safeguards.AccountID != "123456789012" || act1.Safeguards.Region != "us-east-1" || act1.Safeguards.ResourceType != "aws_security_group" {
+		t.Errorf("act1 safeguards not properly populated: %+v", act1.Safeguards)
+	}
+
+	// Action 2: MEDIUM confidence
+	act2 := plan.Actions[1]
+	if act2.Confidence != ConfidenceMedium {
+		t.Errorf("expected act2 Confidence MEDIUM, got %s", act2.Confidence)
+	}
+	if act2.AutomatedPREligible {
+		t.Errorf("expected act2 to NOT be marked AutomatedPREligible")
+	}
+	if !act2.RequiresManualReview {
+		t.Errorf("expected act2 to require manual review")
+	}
+	if act2.RiskWarning == "" {
+		t.Errorf("expected act2 to have risk warning populated")
+	}
+
+	// Action 3: LOW confidence
+	act3 := plan.Actions[2]
+	if act3.Confidence != ConfidenceLow {
+		t.Errorf("expected act3 Confidence LOW, got %s", act3.Confidence)
+	}
+	if act3.AutomatedPREligible {
+		t.Errorf("expected act3 to NOT be marked AutomatedPREligible")
+	}
+	if !act3.RequiresManualReview {
+		t.Errorf("expected act3 to require manual review")
+	}
+
+	// Verify revert.sh output annotations
+	shBytes, err := os.ReadFile(filepath.Join(tmpDir, "revert.sh"))
+	if err != nil {
+		t.Fatalf("failed to read revert.sh: %v", err)
+	}
+	shStr := string(shBytes)
+
+	if !strings.Contains(shStr, "[CONFIDENCE: HIGH] [AUTOMATED_PR_ELIGIBLE]") {
+		t.Errorf("revert.sh missing HIGH confidence automated PR annotation")
+	}
+	if !strings.Contains(shStr, "# [CONFIDENCE: MEDIUM] # REQUIRES_MANUAL_REVIEW") {
+		t.Errorf("revert.sh missing MEDIUM confidence manual review annotation")
+	}
+	if !strings.Contains(shStr, "# [CONFIDENCE: LOW] # REQUIRES_MANUAL_REVIEW") {
+		t.Errorf("revert.sh missing LOW confidence manual review annotation")
+	}
+
+	// Verify revert-plan.md output
+	mdBytes, err := os.ReadFile(filepath.Join(tmpDir, "revert-plan.md"))
+	if err != nil {
+		t.Fatalf("failed to read revert-plan.md: %v", err)
+	}
+	mdStr := string(mdBytes)
+	if !strings.Contains(mdStr, "# REQUIRES_MANUAL_REVIEW") {
+		t.Errorf("revert-plan.md missing REQUIRES_MANUAL_REVIEW warning")
+	}
+
+	// Verify HCL generation annotations
+	hclBytes, err := GenerateHCLReconciliation(report, "")
+	if err != nil {
+		t.Fatalf("GenerateHCLReconciliation failed: %v", err)
+	}
+	hclStr := string(hclBytes)
+	if !strings.Contains(hclStr, "[CONFIDENCE: HIGH] [AUTOMATED_PR_ELIGIBLE]") {
+		t.Errorf("HCL output missing HIGH confidence automated PR eligible tag")
+	}
+	if !strings.Contains(hclStr, "# REQUIRES_MANUAL_REVIEW") {
+		t.Errorf("HCL output missing # REQUIRES_MANUAL_REVIEW tag for MEDIUM/LOW items")
+	}
+}
+
+func TestReconcile_SafeguardsValidation(t *testing.T) {
+	sg := Safeguards{
+		AccountID:    "123456789012",
+		Region:       "us-east-1",
+		ResourceType: "aws_security_group",
+		Validated:    true,
+	}
+
+	// Positive match
+	if err := sg.Validate("123456789012", "us-east-1", "aws_security_group"); err != nil {
+		t.Fatalf("expected valid match, got error: %v", err)
+	}
+
+	// Account mismatch
+	if err := sg.Validate("999999999999", "us-east-1", "aws_security_group"); err == nil {
+		t.Fatalf("expected error on account ID mismatch")
+	}
+
+	// Region mismatch
+	if err := sg.Validate("123456789012", "eu-central-1", "aws_security_group"); err == nil {
+		t.Fatalf("expected error on region mismatch")
+	}
+
+	// Resource type mismatch
+	if err := sg.Validate("123456789012", "us-east-1", "aws_s3_bucket"); err == nil {
+		t.Fatalf("expected error on resource type mismatch")
+	}
+}
+

@@ -4,26 +4,30 @@
 # Review carefully before running 'terraform plan' or 'terraform apply'
 # ==============================================================================
 
+# Resource: aws_security_group (sg-demo-web) [CONFIDENCE: HIGH] [AUTOMATED_PR_ELIGIBLE]
 import {
   to = aws_security_group.web_prod_sg
   id = "sg-demo-web"
 }
 
 resource "aws_security_group" "web_prod_sg" {
-  description = "Production web security group"
   name        = "web-prod-sg"
+  description = "Production web security group"
 }
 
+# Resource: aws_s3_bucket (prod-assets-corp-bucket-12345) [CONFIDENCE: HIGH] [AUTOMATED_PR_ELIGIBLE]
 import {
   to = aws_s3_bucket.prod_assets
   id = "prod-assets-corp-bucket-12345"
 }
 
 resource "aws_s3_bucket" "prod_assets" {
-  bucket                      = "prod-assets-corp-bucket-12345"
   public_access_block_enabled = false
+  bucket                      = "prod-assets-corp-bucket-12345"
 }
 
+# Resource: aws_instance (i-rogue-shadow-99) [CONFIDENCE: MEDIUM] # REQUIRES_MANUAL_REVIEW
+# Risk Warning: Shadow resource mutation has operational impact and requires manual verification before decommission.
 import {
   to = aws_instance.unmanaged_shadow_host
   id = "i-rogue-shadow-99"
