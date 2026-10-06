@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "tool_version": "1.0.0",
+  "scan_id": "scan-golden-demo-2026",
+  "timestamp": "2026-10-06T12:00:00Z",
+  "account_id": "123456789012",
+  "regions": [
+    "us-east-1"
+  ],
+  "total_resources": 3,
+  "total_drift": 3,
+  "status": "COMPLETE",
+  "files": [
+    "report.json",
+    "resources.ndjson",
+    "manifest.json",
+    "schema_version.txt"
+  ]
+}

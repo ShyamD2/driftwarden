@@ -29,6 +29,13 @@ test-race:
 bench:
 	go test -bench=. -benchmem ./pkg/terraform/... ./pkg/diff/...
 
+benchmark:
+	go run ./benchmarks/scripts/runner.go
+
+fuzz:
+	go test -fuzz=FuzzNormalizerIdempotency -fuzztime=3s ./pkg/normalizer/...
+	go test -fuzz=FuzzDriftCorrelationDeterminism -fuzztime=3s ./pkg/diff/...
+
 lint:
 	go vet ./...
 	@if command -v staticcheck > /dev/null; then staticcheck ./...; else echo "staticcheck not installed (skipping)"; fi

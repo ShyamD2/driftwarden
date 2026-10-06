@@ -1,0 +1,215 @@
+{
+  "schema_version": "1.0.0",
+  "tool_version": "1.0.0",
+  "scan_id": "scan-golden-demo-2026",
+  "timestamp": "2026-10-06T12:00:00Z",
+  "account_id": "123456789012",
+  "regions": [
+    "us-east-1"
+  ],
+  "snapshot_mode": "CURRENT",
+  "status": "COMPLETE",
+  "total_scanned": 3,
+  "total_drift": 3,
+  "access_denied_count": 0,
+  "items": [
+    {
+      "resource": {
+        "canonical_id": "aws:aws:ec2:us-east-1:123456789012:security_group/sg-demo-web",
+        "type": "aws_security_group",
+        "provider_id": "sg-demo-web",
+        "name": "web-prod-sg",
+        "account_id": "123456789012",
+        "region": "us-east-1",
+        "attributes": {
+          "description": "Production web security group",
+          "ingress": [
+            {
+              "cidr_blocks": [
+                "0.0.0.0/0"
+              ],
+              "from_port": 22,
+              "protocol": "tcp",
+              "to_port": 22
+            },
+            {
+              "cidr_blocks": [
+                "0.0.0.0/0"
+              ],
+              "from_port": 443,
+              "protocol": "tcp",
+              "to_port": 443
+            }
+          ],
+          "name": "web-prod-sg"
+        },
+        "tags": null,
+        "source": "LIVE",
+        "availability": "",
+        "is_default": false,
+        "identity_confidence": 0,
+        "identity_evidence": null
+      },
+      "drift_type": "ATTRIBUTE_DRIFT",
+      "severity": "CRITICAL",
+      "diffs": {
+        "ingress": {
+          "desired_value": [
+            {
+              "cidr_blocks": [
+                "0.0.0.0/0"
+              ],
+              "from_port": 443,
+              "protocol": "tcp",
+              "to_port": 443
+            }
+          ],
+          "state_value": [
+            {
+              "cidr_blocks": [
+                "0.0.0.0/0"
+              ],
+              "from_port": 443,
+              "protocol": "tcp",
+              "to_port": 443
+            }
+          ],
+          "live_value": [
+            {
+              "cidr_blocks": [
+                "0.0.0.0/0"
+              ],
+              "from_port": 22,
+              "protocol": "tcp",
+              "to_port": 22
+            },
+            {
+              "cidr_blocks": [
+                "0.0.0.0/0"
+              ],
+              "from_port": 443,
+              "protocol": "tcp",
+              "to_port": 443
+            }
+          ],
+          "attribute_kind": "LITERAL"
+        }
+      },
+      "double_read_verified": true,
+      "finding_confidence": 1,
+      "finding_evidence": [
+        "live_ingress_contains_0.0.0.0/0:22",
+        "state_specifies_443_only",
+        "Security group allows unrestricted SSH ingress (port 22) from 0.0.0.0/0",
+        "Resource aws:aws:ec2:us-east-1:123456789012:security_group/sg-demo-web is missing mandatory governance tags: Environment, Owner, CostCenter"
+      ],
+      "cis_rule_id": "DW-CIS-EC2-001",
+      "capabilities": {
+        "discover": true,
+        "normalize": false,
+        "compare": false,
+        "security_analyze": true,
+        "cost_estimate": true,
+        "reconcile": true
+      }
+    },
+    {
+      "resource": {
+        "canonical_id": "aws:aws:s3:::bucket/prod-assets-corp-bucket-12345",
+        "type": "aws_s3_bucket",
+        "provider_id": "prod-assets-corp-bucket-12345",
+        "name": "prod_assets",
+        "account_id": "123456789012",
+        "region": "us-east-1",
+        "attributes": {
+          "bucket": "prod-assets-corp-bucket-12345",
+          "public_access_block_enabled": false
+        },
+        "tags": null,
+        "source": "LIVE",
+        "availability": "",
+        "is_default": false,
+        "identity_confidence": 0,
+        "identity_evidence": null
+      },
+      "drift_type": "ATTRIBUTE_DRIFT",
+      "severity": "CRITICAL",
+      "diffs": {
+        "public_access_block_enabled": {
+          "desired_value": true,
+          "state_value": true,
+          "live_value": false,
+          "attribute_kind": "LITERAL"
+        }
+      },
+      "double_read_verified": true,
+      "finding_confidence": 1,
+      "finding_evidence": [
+        "live_public_access_block_disabled",
+        "S3 bucket Public Access Block is explicitly disabled",
+        "S3 bucket has no server-side encryption configuration configured",
+        "Resource aws:aws:s3:::bucket/prod-assets-corp-bucket-12345 is missing mandatory governance tags: Environment, Owner, CostCenter"
+      ],
+      "cis_rule_id": "DW-CIS-S3-001",
+      "capabilities": {
+        "discover": true,
+        "normalize": false,
+        "compare": false,
+        "security_analyze": true,
+        "cost_estimate": true,
+        "reconcile": true
+      }
+    },
+    {
+      "resource": {
+        "canonical_id": "aws:aws:ec2:us-east-1:123456789012:instance/i-rogue-shadow-99",
+        "type": "aws_instance",
+        "provider_id": "i-rogue-shadow-99",
+        "name": "unmanaged-shadow-host",
+        "account_id": "123456789012",
+        "region": "us-east-1",
+        "attributes": {
+          "id": "i-rogue-shadow-99",
+          "instance_type": "t3.medium"
+        },
+        "tags": {
+          "CreatedBy": "unknown-console-user"
+        },
+        "source": "LIVE",
+        "availability": "",
+        "is_default": false,
+        "identity_confidence": 0,
+        "identity_evidence": null
+      },
+      "drift_type": "SHADOW_RESOURCE",
+      "severity": "HIGH",
+      "diffs": null,
+      "double_read_verified": true,
+      "finding_confidence": 1,
+      "finding_evidence": [
+        "resource_present_in_live_absent_from_state",
+        "Resource aws:aws:ec2:us-east-1:123456789012:instance/i-rogue-shadow-99 is missing mandatory governance tags: Environment, Owner, CostCenter"
+      ],
+      "cis_rule_id": "DW-GOV-TAG-001",
+      "cost": {
+        "amount_monthly": 30.368,
+        "currency": "USD",
+        "region": "us-east-1",
+        "pricing_source": "AWS Pricing Static Catalog (us-east-1.json)",
+        "pricing_model": "Unmanaged Shadow Asset (100% Waste Bleed)",
+        "retrieved_at": "2026-10-06T12:43:00.656169Z",
+        "confidence": 0.95
+      },
+      "capabilities": {
+        "discover": true,
+        "normalize": false,
+        "compare": false,
+        "security_analyze": true,
+        "cost_estimate": true,
+        "reconcile": true
+      }
+    }
+  ],
+  "summary": {},
+  "execution_time_ms": 0
+}

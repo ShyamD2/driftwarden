@@ -1,0 +1,54 @@
+{
+  "timestamp": "2026-10-06T12:38:44Z",
+  "os": "windows",
+  "arch": "amd64",
+  "go_version": "go1.27.0",
+  "cpu_cores": 4,
+  "environment": "Host Hardware Execution",
+  "results": [
+    {
+      "benchmark_name": "BenchmarkStateParsing",
+      "dataset_size": 1000,
+      "iterations": 15,
+      "median_ms": 7.532,
+      "p95_ms": 10.47,
+      "p99_ms": 10.47,
+      "memory_allocated_mb": 2.3391204833984376,
+      "target_sla_ms": 50,
+      "status": "PASS"
+    },
+    {
+      "benchmark_name": "BenchmarkStateParsing",
+      "dataset_size": 10000,
+      "iterations": 15,
+      "median_ms": 66.677,
+      "p95_ms": 75.573,
+      "p99_ms": 75.573,
+      "memory_allocated_mb": 28.47966105143229,
+      "target_sla_ms": 500,
+      "status": "PASS"
+    },
+    {
+      "benchmark_name": "BenchmarkSemanticDiffing",
+      "dataset_size": 1000,
+      "iterations": 15,
+      "median_ms": 1.588,
+      "p95_ms": 3.546,
+      "p99_ms": 3.546,
+      "memory_allocated_mb": 0.26586507161458334,
+      "target_sla_ms": 10,
+      "status": "PASS"
+    },
+    {
+      "benchmark_name": "BenchmarkSemanticDiffing",
+      "dataset_size": 10000,
+      "iterations": 15,
+      "median_ms": 20.599,
+      "p95_ms": 29.987,
+      "p99_ms": 29.987,
+      "memory_allocated_mb": 2.534826151529948,
+      "target_sla_ms": 100,
+      "status": "PASS"
+    }
+  ]
+}

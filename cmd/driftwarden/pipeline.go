@@ -111,6 +111,7 @@ func runScanPipeline(ctx context.Context, cfg *config.Config, logger *slog.Logge
 	scanID := fmt.Sprintf("scan-%d", time.Now().Unix())
 	accountID := resolveAccountID(stateResources, liveResources, desiredResources)
 	report := comparator.Correlate(desiredResources, stateResources, liveResources, scanID, accountID, cfg.Regions)
+	report.APIEfficiency = dispatcher.GetMetrics().Snapshot(report.TotalScanned)
 
 	// Invariant: check if any collection errors had AccessDenied
 	for _, e := range result.Errors {

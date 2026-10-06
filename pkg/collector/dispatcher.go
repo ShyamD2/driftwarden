@@ -18,6 +18,7 @@ type Dispatcher struct {
 	concurrency int
 	limiter     *rate.Limiter
 	registry    *Registry
+	Metrics     *MetricsTracker
 }
 
 // NewDispatcher creates a new Dispatcher.
@@ -39,7 +40,13 @@ func NewDispatcher(concurrency int, rateLimit int, registry *Registry) *Dispatch
 		concurrency: concurrency,
 		limiter:     limiter,
 		registry:    registry,
+		Metrics:     NewMetricsTracker(),
 	}
+}
+
+// GetMetrics returns the internal API efficiency metrics tracker.
+func (d *Dispatcher) GetMetrics() *MetricsTracker {
+	return d.Metrics
 }
 
 // DispatchTask represents a single collection unit for a collector in a region.
@@ -122,10 +129,20 @@ func (d *Dispatcher) Dispatch(ctx context.Context, cfg aws.Config, regions []str
 					continue
 				}
 
+				// Record API call in metrics tracker
+				d.Metrics.RecordCall(task.Region, task.Collector.ResourceType())
+
 				// Execute collection with retry middleware
 				res, err := ExecuteWithRetry(ctx, 3, func() ([]models.CanonicalResource, error) {
 					return task.Collector.Collect(ctx, task.Config, task.Region)
 				})
+
+				if err != nil {
+					c := dwErrors.Classify(err)
+					if c.Code == dwErrors.ErrThrottled {
+						d.Metrics.RecordThrottle()
+					}
+				}
 
 				resultChan <- DispatchResult{
 					ResourceType: task.Collector.ResourceType(),

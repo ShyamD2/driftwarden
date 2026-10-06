@@ -21,12 +21,13 @@
 <p align="center">
   <a href="#-the-three-source-architecture">Architecture</a> •
   <a href="#-key-features">Features</a> •
+  <a href="#-golden-end-to-end-demonstration">Golden Demo</a> •
   <a href="#-quickstart">Quickstart</a> •
   <a href="#-cli-command-matrix">CLI Matrix</a> •
   <a href="#-comparison">Comparison</a> •
-  <a href="#-benchmarks">Benchmarks</a> •
+  <a href="#-hardware-honest-performance-benchmarks">Benchmarks</a> •
   <a href="#-github-action--cicd">CI/CD</a> •
-  <a href="#-safety--security-invariants">Safety</a>
+  <a href="#-safety--security-invariants">Safety & Threat Model</a>
 </p>
 
 ---
@@ -39,7 +40,7 @@ Traditional drift detection tools only inspect **Terraform State $\longleftright
 
 This leaves an alarming blindspot: **Unapplied GitOps Changes**. When an engineer modifies `.tf` files in Git without applying them, state-only diffing reports zero drift—even as your actual declarative truth diverges from reality. Conversely, legacy scanners treat temporary API latency as true drift, triggering spurious alerts that cause alert fatigue.
 
-**DriftWarden solves this with a mathematically verified Three-Source Correlation Matrix**:
+**DriftWarden solves this with a deterministically verified Three-Source Correlation Matrix**:
 
 $$\text{DESIRED (Git HCL)} \quad \longleftrightarrow \quad \text{STATE (Terraform tfstate)} \quad \longleftrightarrow \quad \text{LIVE (AWS Cloud)}$$
 
@@ -120,14 +121,50 @@ flowchart TD
   * `DW-CIS-S3-001`: S3 Public Access Block disabled (CRITICAL)
   * `DW-CIS-S3-002`: S3 default server-side encryption missing (HIGH)
   * `DW-CIS-IAM-001`: Granular wildcard privilege escalation detection (`*` action/resource)
+  * `DW-CIS-RDS-001`: Prohibit publicly accessible RDS instances (CRITICAL)
+  * `DW-CIS-CT-001`: CloudTrail multi-region logging enabled (HIGH)
+  * `DW-CIS-VPC-001`: Default security group restricts all traffic (HIGH)
   * `DW-GOV-TAG-001`: Mandatory tagging enforcement (`Environment`, `Owner`, `CostCenter`)
 * 💰 **FinOps On-Demand Cost Bleed Engine**: Computes exact hourly and monthly dollar waste for unmanaged rogue instances, orphaned EBS volumes, and idle unattached Elastic IPs.
-* ⏱️ **Double-Read Consistency Probe**: Automatically re-probes anomalous resources after a configurable delay (`--verify-consistency-delay 2.5s`) to completely eliminate false alerts caused by AWS eventual consistency.
+* ⏱️ **Double-Read Consistency Probe**: Automatically re-probes anomalous resources after a configurable delay (`--verify-consistency-delay 2.5s`) to mitigate false alerts caused by AWS eventual consistency.
 * 🔒 **Lock-Aware State Snapshots**: Audits S3-backed states protected by DynamoDB lock tables without deadlocking active CI/CD Terraform pipelines.
 * 🏢 **Multi-Account AWS Organizations Fan-Out**: Automatically discovers all active member accounts in AWS Organizations and runs multi-threaded cross-account audits with token bucket rate limiting.
 * 🛠️ **Capability-Aware Dual Remediation**:
   * **GitOps Mode**: Generates modern Terraform 1.5+ `import {}` blocks and resource skeletons ready for Pull Requests.
   * **Revert Mode**: Generates defensive remediation shell scripts (`revert.sh`), runbooks (`revert-plan.md`), and JSON payloads with **strict dry-run safety and zero `eval` execution**.
+
+---
+
+## 🎬 Golden End-to-End Demonstration
+
+DriftWarden includes a 100% reproducible, automated demonstration simulating live AWS console mutations against a compliant Terraform infrastructure baseline:
+
+```
+┌────────────────────────────────┐       ┌────────────────────────────────┐
+│      DESIRED & STATE           │       │          LIVE AWS CLOUD        │
+│  Terraform Configuration (Git) │  vs.  │  Console Operator Mutations    │
+├────────────────────────────────┤       ├────────────────────────────────┤
+│ 1. SG: Ingress port 443 ONLY   │       │ 1. SG: Port 22 added (0.0.0.0) │ -> CRITICAL (DW-CIS-EC2-001)
+│ 2. S3: Public Access Block ON  │       │ 2. S3: Public Access Block OFF │ -> CRITICAL (DW-CIS-S3-001)
+│ 3. EC2: None declared          │       │ 3. EC2: Rogue t3.medium active │ -> SHADOW ($60.74/mo bleed)
+└────────────────────────────────┘       └────────────────────────────────┘
+```
+
+### Reproduce in Under 5 Seconds
+
+No live AWS credentials or cloud costs required:
+
+```bash
+# On Linux / macOS:
+./demo/run_demo.sh
+
+# On Windows PowerShell:
+.\demo\run_demo.ps1
+```
+
+The script audits the simulated mutations, detects all discrepancies, verifies CIS benchmark violations, creates full evidence bundles with SHA-256 manifests, and synthesizes GitOps PR import blocks and defensive `revert.sh` scripts.
+
+For full walkthrough details, see [**demo/README.md**](demo/README.md).
 
 ---
 
@@ -259,7 +296,7 @@ aws_s3_bucket.attributes.tags_all
 
 ## 🤖 GitHub Action & CI/CD Integration
 
-DriftWarden includes a battle-tested GitHub Action with automated pull request commenting:
+DriftWarden includes a production-hardened GitHub Action with automated pull request commenting:
 
 ```yaml
 name: Infrastructure Drift & Security Audit
@@ -311,7 +348,7 @@ jobs:
 | **DynamoDB Lock-Aware** | ❌ Hard Lock Block | ❌ Hard Lock Block | N/A | **✅ Yes (Non-blocking Lock Audit)** |
 | **CIS v3.0 Benchmark Engine** | ❌ No | ❌ No | ⚠️ Pay-per-rule | **✅ Built-in (`DW-CIS-*` Engine)** |
 | **FinOps Idle Cost Estimator** | ❌ No | ❌ No | ❌ No | **✅ Built-in ($/month bleed)** |
-| **Double-Read Consistency Probe** | ❌ No | ❌ No | ❌ No | **✅ Yes (Zero cloud lag false alerts)** |
+| **Double-Read Consistency Probe** | ❌ No | ❌ No | ❌ No | **✅ Yes (Configurable Double-Read Verification)** |
 | **Modern Terraform 1.5+ Imports** | ❌ No | ❌ No (tf 0.13) | ❌ No | **✅ Yes (`import {}` block synthesis)** |
 | **Defensive Dry-Run Revert Scripts** | ❌ No | ❌ No | ❌ No | **✅ Yes (`revert.sh` with zero eval)** |
 | **Container Image Size** | N/A | ~85 MB | Cloud SaaS | **`< 25 MB` Distroless Static** |
@@ -320,47 +357,66 @@ jobs:
 
 ## 🏎️ Hardware-Honest Performance Benchmarks
 
-Recorded on standard commodity hardware (**11th Gen Intel Core i3-1115G4 @ 3.00GHz, 4 vCPUs**):
+Measured using automated benchmark suites on commodity hardware (**11th Gen Intel Core i3-1115G4 @ 3.00GHz, 4 vCPUs, Go 1.27**):
 
-| Benchmark Suite | Test Workload Scenario | Hard Target SLA | Measured Result | Performance Margin |
-|---|---|:---:|:---:|:---:|
-| **`BenchmarkStateParsing`** | 1,000 resources parsed from state JSON | $< 50.0\text{ ms}$ | **$8.58\text{ ms}$** | **$5.8\times\text{ faster than target}$** |
-| **`BenchmarkSemanticDiffing`** | 1,000 resources correlated across 3 sources | $< 10.0\text{ ms}$ | **$1.62\text{ ms}$** | **$6.2\times\text{ faster than target}$** |
-| **`TestMemoryHeapAllocation`** | Peak memory allocated during 1,000-resource diff | $< 30.0\text{ MB}$ | **$2.03\text{ MB}$** | **$14.7\times\text{ below target}$** |
+| Benchmark Suite | Scale (Resources) | Target SLA | Median Time | P95 Time | Peak Heap Alloc | SLA Compliance |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **`BenchmarkStateParsing`** | 1,000 | $< 50.0\text{ ms}$ | **$7.53\text{ ms}$** | $10.47\text{ ms}$ | $2.34\text{ MB}$ | **$6.6\times\text{ faster than SLA}$** |
+| **`BenchmarkStateParsing`** | 10,000 | $< 500.0\text{ ms}$ | **$66.68\text{ ms}$** | $75.57\text{ ms}$ | $28.48\text{ MB}$ | **$7.5\times\text{ faster than SLA}$** |
+| **`BenchmarkSemanticDiffing`** | 1,000 | $< 10.0\text{ ms}$ | **$1.59\text{ ms}$** | $3.55\text{ ms}$ | $0.27\text{ MB}$ | **$6.3\times\text{ faster than SLA}$** |
+| **`BenchmarkSemanticDiffing`** | 10,000 | $< 100.0\text{ ms}$ | **$20.60\text{ ms}$** | $29.99\text{ ms}$ | $2.53\text{ MB}$ | **$4.8\times\text{ faster than SLA}$** |
+
+### Reproducing Benchmarks Locally
+
+Reproduce the exact benchmark harness on your local machine:
+
+```bash
+make benchmark
+```
+
+Full methodology, iteration count, and raw execution telemetry are tracked in [**benchmarks/README.md**](benchmarks/README.md) and [**benchmarks/results/benchmark-2026-10.md**](benchmarks/results/benchmark-2026-10.md).
 
 ---
 
 ## 🔒 Safety & Security Guarantees
 
-1. **Strict Read-Only Guarantee**: DriftWarden only executes `Describe*`, `List*`, and `Get*` API calls. Destructive or mutating cloud operations are architecturally impossible within the core binary.
-2. **AccessDenied Invariant**: Permission errors (`ErrAccessDenied`) are strictly quarantined as `PARTIAL_SCAN` (exit code 4) and are never falsely classified as `ErrNotFound`, completely preventing false ghost-resource warnings.
+1. **Strict Read-Only Guarantee**: DriftWarden only executes `Describe*`, `List*`, and `Get*` API calls. Destructive or mutating cloud operations are architecturally prohibited within the core binary.
+2. **AccessDenied Invariant**: Permission errors (`ErrAccessDenied`) are strictly quarantined as `PARTIAL_SCAN` (exit code 4) and are never falsely classified as `ErrNotFound`, preventing spurious ghost-resource warnings.
 3. **Sensitive Data Masking**: All passwords, secret tokens, private keys, and auth attributes are masked to `[REDACTED_SENSITIVE]` prior to comparison, logging, or export.
 4. **Defensive Revert Script Integrity**: Revert scripts synthesized by `driftwarden reconcile --mode revert` strictly prohibit `eval`, default to `EXECUTE=false` echo-only mode, and enforce `set -euo pipefail`.
-5. **Exit Code Precedence Guarantee**: Standardized deterministic CLI exit codes:
+5. **Deterministic Exit Codes**:
    * `0`: Clean scan (Zero drift / zero violations)
    * `1`: General runtime error
-   * `2`: Drift detected / CRITICAL security violation
-   * `3`: Terraform state locked
-   * `4`: Partial scan (AccessDenied on some resources)
-   * `5`: Invalid configuration / bad flags
+   * `2`: Drift detected
+   * `3`: Security rule violation detected
+   * `4`: Partial scan (Quarantined `AccessDenied` resources)
+
+### Security Documentation & Specifications
+* 🛡️ [**Security Model & Verification Matrix**](docs/security-model.md) — Comprehensive threat defense matrix verified by automated adversarial tests.
+* 🔍 [**STRIDE Threat Model**](docs/threat-model.md) — Threat actor taxonomy, attack surfaces, and mitigations.
+* 📦 [**Forensic Evidence Format**](docs/evidence-format.md) — Specification for SHA-256 evidence bundles and provenance records.
+* 🏷️ [**Versioning & Compatibility Policy**](docs/versioning-policy.md) — SemVer 2.0.0, CLI flag stability, and machine schema guarantees.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are warmly welcomed! Please read our [Architecture Guide](docs/ARCHITECTURE.md) to understand the three-source correlation internals and collector pipelines.
+Contributions are warmly welcomed! Please review our [Contribution Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ```bash
 # Clone the repository
 git clone https://github.com/ShyamD2/driftwarden.git
 cd driftwarden
 
-# Run tests and static analysis
+# Run tests and invariant verifications
 make test
-make lint
+go test -v ./tests/...
 
-# Run benchmarks
-make bench
+# Run property & fuzz tests
+make fuzz
+
+# Run performance benchmarks
+make benchmark
 ```
 
 ---

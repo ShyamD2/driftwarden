@@ -1,6 +1,8 @@
 package evidence
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,6 +35,7 @@ func TestSaveAndLoadEvidenceBundle(t *testing.T) {
 				Resource: models.CanonicalResource{
 					CanonicalID: "aws:aws:ec2:us-east-1:123456789012:instance/i-rogue",
 					Type:        "aws_instance",
+					ProviderID:  "i-rogue",
 				},
 			},
 		},
@@ -54,12 +57,14 @@ func TestSaveAndLoadEvidenceBundle(t *testing.T) {
 		t.Fatalf("SaveEvidenceBundle failed: %v", err)
 	}
 
-	// Verify all 4 required files exist
+	// Verify all 6 required forensic files exist
 	expectedFiles := []string{
 		"report.json",
 		"resources.ndjson",
+		"provenance.json",
 		"manifest.json",
 		"schema_version.txt",
+		"checksums.txt",
 	}
 	for _, f := range expectedFiles {
 		p := filepath.Join(tmpDir, f)
@@ -68,13 +73,30 @@ func TestSaveAndLoadEvidenceBundle(t *testing.T) {
 		}
 	}
 
-	// Check schema_version.txt content
-	schemaVerBytes, err := os.ReadFile(filepath.Join(tmpDir, "schema_version.txt"))
+	// Verify Checksums File Integrity
+	checksumsData, err := os.ReadFile(filepath.Join(tmpDir, "checksums.txt"))
 	if err != nil {
-		t.Fatalf("failed to read schema_version.txt: %v", err)
+		t.Fatalf("failed to read checksums.txt: %v", err)
 	}
-	if strings.TrimSpace(string(schemaVerBytes)) != "1.0.0" {
-		t.Errorf("expected schema_version 1.0.0, got %q", string(schemaVerBytes))
+
+	for _, line := range strings.Split(strings.TrimSpace(string(checksumsData)), "\n") {
+		parts := strings.Fields(line)
+		if len(parts) != 2 {
+			continue
+		}
+		expectedHash := parts[0]
+		fileName := parts[1]
+
+		fileBytes, err := os.ReadFile(filepath.Join(tmpDir, fileName))
+		if err != nil {
+			t.Fatalf("failed to read %s: %v", fileName, err)
+		}
+		actualHashBytes := sha256.Sum256(fileBytes)
+		actualHash := hex.EncodeToString(actualHashBytes[:])
+
+		if expectedHash != actualHash {
+			t.Errorf("checksum mismatch for %s: expected %s, got %s", fileName, expectedHash, actualHash)
+		}
 	}
 
 	// 2. Load

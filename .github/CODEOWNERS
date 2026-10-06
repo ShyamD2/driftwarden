@@ -1,0 +1,16 @@
+# CODEOWNERS for DriftWarden
+# Enforce review requirements for critical security boundaries and CI/CD automation
+
+# Default global owner
+* @ShyamD2
+
+# CI/CD Workflows & Security Automation
+/.github/workflows/ @ShyamD2
+/action.yml @ShyamD2
+/scripts/ @ShyamD2
+
+# Core Security & Rule Engine
+/pkg/rules/ @ShyamD2
+/pkg/normalizer/ @ShyamD2
+/pkg/reconcile/ @ShyamD2
+/SECURITY.md @ShyamD2

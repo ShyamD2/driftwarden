@@ -41,6 +41,12 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 
+sboms:
+  - id: default
+    artifacts: archive
+    documents:
+      - "${artifact}.spdx.sbom"
+
 changelog:
   sort: asc
   filters:

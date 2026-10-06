@@ -17,6 +17,9 @@ func RegisterDefaultRules(engine *analyzer.SecurityEngine) {
 		v3.NewDWCIS_S3_002(),
 		v3.NewDWCIS_IAM_001(),
 		v3.NewDWGOV_TAG_001(),
+		v3.NewDWCIS_RDS_001(),
+		v3.NewDWCIS_CT_001(),
+		v3.NewDWCIS_VPC_001(),
 	)
 }
 

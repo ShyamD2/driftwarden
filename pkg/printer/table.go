@@ -70,6 +70,18 @@ func PrintTable(w io.Writer, report *models.ScanReport, noColor bool) error {
 	table.Render()
 	fmt.Fprintf(w, "\n")
 
+	if report.APIEfficiency != nil && report.APIEfficiency.TotalAPICalls > 0 {
+		fmt.Fprintf(w, "----------------------------------------------------------------------------------------\n")
+		fmt.Fprintf(w, "AWS API Efficiency:\n")
+		fmt.Fprintf(w, "  • Total API Queries:   %d\n", report.APIEfficiency.TotalAPICalls)
+		fmt.Fprintf(w, "  • Retries:             %d\n", report.APIEfficiency.Retries)
+		fmt.Fprintf(w, "  • Throttling Events:   %d\n", report.APIEfficiency.Throttles)
+		if report.APIEfficiency.CallsPerResource > 0 {
+			fmt.Fprintf(w, "  • Calls / Resource:    %.2f\n", report.APIEfficiency.CallsPerResource)
+		}
+		fmt.Fprintf(w, "----------------------------------------------------------------------------------------\n\n")
+	}
+
 	return nil
 }
 

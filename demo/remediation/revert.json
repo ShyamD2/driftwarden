@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "timestamp": "2026-10-06T13:02:41Z",
+  "total_actions": 3,
+  "actions": [
+    {
+      "rule_id": "DW-CIS-EC2-001",
+      "resource_id": "sg-demo-web",
+      "canonical_id": "aws:aws:ec2:us-east-1:123456789012:security_group/sg-demo-web",
+      "severity": "CRITICAL",
+      "command": [
+        "aws",
+        "ec2",
+        "revoke-security-group-ingress",
+        "--group-id",
+        "sg-demo-web",
+        "--protocol",
+        "tcp",
+        "--port",
+        "22",
+        "--cidr",
+        "0.0.0.0/0"
+      ],
+      "description": "Revoke unrestricted SSH ingress (port 22) from 0.0.0.0/0 on sg-demo-web"
+    },
+    {
+      "rule_id": "DW-CIS-S3-001",
+      "resource_id": "prod-assets-corp-bucket-12345",
+      "canonical_id": "aws:aws:s3:::bucket/prod-assets-corp-bucket-12345",
+      "severity": "CRITICAL",
+      "command": [
+        "aws",
+        "s3api",
+        "put-public-access-block",
+        "--bucket",
+        "prod-assets-corp-bucket-12345",
+        "--public-access-block-configuration",
+        "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+      ],
+      "description": "Enable full Public Access Block on S3 bucket prod-assets-corp-bucket-12345"
+    },
+    {
+      "resource_id": "i-rogue-shadow-99",
+      "canonical_id": "aws:aws:ec2:us-east-1:123456789012:instance/i-rogue-shadow-99",
+      "severity": "HIGH",
+      "command": [
+        "aws",
+        "ec2",
+        "stop-instances",
+        "--instance-ids",
+        "i-rogue-shadow-99"
+      ],
+      "description": "Stop unmanaged shadow EC2 instance i-rogue-shadow-99 pending decommission"
+    }
+  ]
+}

@@ -118,6 +118,16 @@ type DriftItem struct {
 	Capabilities       CollectorCapabilities `json:"capabilities"`
 }
 
+// APIEfficiency tracks cloud provider call counts, retries, and efficiency ratios.
+type APIEfficiency struct {
+	TotalAPICalls    int64            `json:"total_api_calls"`
+	Retries          int64            `json:"retries"`
+	Throttles        int64            `json:"throttles"`
+	CallsPerRegion   map[string]int64 `json:"calls_per_region,omitempty"`
+	CallsPerService  map[string]int64 `json:"calls_per_service,omitempty"`
+	CallsPerResource float64          `json:"calls_per_resource"`
+}
+
 // ScanReport is the top-level report emitted by audit and scan commands.
 type ScanReport struct {
 	ReportSchemaVersion string            `json:"schema_version"` // "1.0.0"
@@ -134,4 +144,5 @@ type ScanReport struct {
 	Items               []DriftItem       `json:"items"`
 	Summary             map[DriftType]int `json:"summary"`
 	ExecutionTimeMs     int64             `json:"execution_time_ms"`
+	APIEfficiency       *APIEfficiency    `json:"api_efficiency,omitempty"`
 }
