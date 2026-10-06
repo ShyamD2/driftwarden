@@ -18,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
-          go-version: '1.24'
+          go-version-file: 'go.mod'
           cache: true
 
       - name: Verify Module Hygiene
@@ -30,7 +30,7 @@ jobs:
         run: go vet ./...
 
       - name: Run Staticcheck
-        uses: dominikh/staticcheck-action@fe1dd0c3658873b248a453551877640a43bc5d54 # v1.3.1
+        uses: dominikh/staticcheck-action@fe1dd0c3658873b46f8c9bb3291096a617310ca6 # v1.3.1
         with:
           version: "latest"
           install-go: false
