@@ -19,6 +19,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=flat-square)](https://github.com/ShyamD2/driftwarden/pulls)
 
 <p align="center">
+  <a href="#-visual-tour--screenshots">Visual Tour</a> •
   <a href="#-the-three-source-architecture">Architecture</a> •
   <a href="#-key-features">Features</a> •
   <a href="#-golden-end-to-end-demonstration">Golden Demo</a> •
@@ -134,6 +135,26 @@ flowchart TD
 * 🛠️ **Capability-Aware Dual Remediation**:
   * **GitOps Mode**: Generates modern Terraform 1.5+ `import {}` blocks and resource skeletons with confidence scoring (`HIGH`, `MEDIUM`, `LOW`) and multi-layer boundary safeguards.
   * **Revert Mode**: Generates defensive remediation shell scripts (`revert.sh`), runbooks (`revert-plan.md`), and JSON payloads with **strict dry-run safety and zero `eval` execution**.
+
+---
+
+## 📸 Visual Tour & Core Showcase
+
+Detailed screenshot walk-throughs and reproduction instructions are cataloged in [**screenshots/README.md**](screenshots/README.md).
+
+| 1. Forensic Drift Dossier | 2. GitOps IaC Synthesis |
+| :---: | :---: |
+| [![Drift Detection Dossier](screenshots/01-drift-detection-dossier.png)](screenshots/01-drift-detection-dossier.png)<br><sub>*Multi-plane divergence matrix & CIS audit (`driftwarden explain`)*</sub> | [![GitOps IaC Synthesis](screenshots/02-gitops-remediation-hcl.png)](screenshots/02-gitops-remediation-hcl.png)<br><sub>*Modern Terraform 1.5+ `import {}` blocks (`driftwarden reconcile --mode hcl`)*</sub> |
+| **3. Defensive Revert Script** | **4. Invariant Test Suite** |
+| [![Defensive Revert Script](screenshots/03-defensive-revert-script.png)](screenshots/03-defensive-revert-script.png)<br><sub>*Hardened bash with dry-run default & zero eval (`revert.sh`)*</sub> | [![Invariant Test Suite](screenshots/04-test-suite-and-invariants.png)](screenshots/04-test-suite-and-invariants.png)<br><sub>*Live execution timings & invariant tests (`go test -v ./tests/invariants`)*</sub> |
+
+<p align="center">
+  <b>5. Production CI/CD Pipeline Verification</b><br>
+  <a href="screenshots/05-github-actions-ci-pipeline.png">
+    <img src="screenshots/05-github-actions-ci-pipeline.png" alt="Production CI Pipeline Status" width="850">
+  </a><br>
+  <i>100% green multi-stage quality gates across module hygiene, static analysis, blocking vulnerability auditing, and multi-arch builds.</i>
+</p>
 
 ---
 
@@ -259,6 +280,9 @@ driftwarden explain "aws:aws:ec2:us-east-1:197550036081:instance/i-0a1b2c3d4e5f6
   --from-scan-dir ./evidence
 ```
 
+> [!NOTE]
+> 📸 **Visual Showcase**: See the terminal output of a multi-plane divergence matrix in [`screenshots/01-drift-detection-dossier.png`](screenshots/01-drift-detection-dossier.png).
+
 #### 5. `driftwarden reconcile`
 Generates safe remediation artifacts:
 ```bash
@@ -268,6 +292,9 @@ driftwarden reconcile --mode hcl --out ./reconcile.tf
 # Revert Mode: Generates dry-run shell script and markdown action plan
 driftwarden reconcile --mode revert --out ./remediation/
 ```
+
+> [!TIP]
+> 📸 **Artifact Previews**: Inspect generated [Terraform 1.5+ `reconcile.tf`](screenshots/02-gitops-remediation-hcl.png) and hardened defensive [`revert.sh`](screenshots/03-defensive-revert-script.png).
 
 #### 6. `driftwarden generate-iam-policy`
 Synthesizes the exact, least-privilege read-only AWS IAM policy needed to audit selected services:
@@ -337,6 +364,9 @@ jobs:
           comment-pr: 'true'
 ```
 
+> [!NOTE]
+> 📸 **Continuous Integration Status**: DriftWarden's automated multi-stage quality gates and multi-arch compilation are strictly verified green on GitHub Actions: [View Pipeline Verification Run](screenshots/05-github-actions-ci-pipeline.png).
+
 ---
 
 ## 📊 Comparison Matrix
@@ -392,6 +422,9 @@ Full methodology, iteration count, and raw execution telemetry are tracked in [*
    * `2`: Drift detected
    * `3`: Security rule violation detected
    * `4`: Partial scan (Quarantined `AccessDenied` resources)
+
+> [!TIP]
+> 📸 **Verified Invariant Test Telemetry**: Live test execution and adversarial invariant tests pass with 100% success rate: [View Invariant Test Suite Telemetry](screenshots/04-test-suite-and-invariants.png).
 
 ### Security Documentation & Specifications
 * 🛡️ [**Security Model & Verification Matrix**](docs/security-model.md) — Comprehensive threat defense matrix verified by automated adversarial tests.
