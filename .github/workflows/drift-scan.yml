@@ -16,23 +16,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Check AWS Credentials Configuration
+        id: creds
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.AWS_DRIFTWARDEN_ROLE_ARN }}" ]; then
+            echo "has_creds=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_creds=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Demo Verification Mode::AWS_DRIFTWARDEN_ROLE_ARN secret not configured. Running DriftWarden simulated verification audit with bundled evidence."
+          fi
 
       - name: Configure AWS Credentials (OIDC Federation)
-        uses: aws-actions/configure-aws-credentials@v4
+        if: steps.creds.outputs.has_creds == 'true'
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: ${{ secrets.AWS_DRIFTWARDEN_ROLE_ARN }}
           aws-region: us-east-1
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
-          go-version: '1.24'
+          go-version: 'stable'
+          cache: true
 
       - name: Build DriftWarden Binary
         run: go build -o /usr/local/bin/driftwarden ./cmd/driftwarden
 
-      - name: Run Drift & Security Audit
+      - name: Run Live Drift & Security Audit
+        if: steps.creds.outputs.has_creds == 'true'
         id: scan
         run: |
           mkdir -p evidence
@@ -43,9 +57,16 @@ jobs:
             --save-evidence-dir evidence \
             --fail-on-critical=true
 
+      - name: Run Simulated Verification Audit (Demo Mode)
+        if: steps.creds.outputs.has_creds != 'true'
+        run: |
+          mkdir -p evidence
+          cp -r demo/evidence/* evidence/
+          driftwarden explain "aws:aws:ec2:us-east-1:123456789012:security_group/sg-demo-web" --from-scan-dir evidence
+
       - name: Upload Audit Evidence Bundle
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: driftwarden-audit-evidence-${{ github.run_id }}
           path: evidence/
