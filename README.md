@@ -15,10 +15,12 @@
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat-square&logo=go)](https://go.dev)
 [![Docker Image](https://img.shields.io/badge/Docker-Distroless%20%3C25MB-2496ED?style=flat-square&logo=docker)](https://github.com/ShyamD2/driftwarden/pkgs/container/driftwarden)
 [![CIS Benchmark](https://img.shields.io/badge/CIS%20AWS-v3.0%20Compliant-success?style=flat-square&logo=securityscorecard)](pkg/rules/cis/v3)
+[![Project Report](https://img.shields.io/badge/Project%20Report-Edition%202026%20(PDF)-FF6F00?style=flat-square&logo=adobe-acrobat-reader&logoColor=white)](docs/driftwarden-project-report.pdf)
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=flat-square)](https://github.com/ShyamD2/driftwarden/pulls)
 
 <p align="center">
+  <a href="docs/driftwarden-project-report.pdf"><b>📄 Project Report (PDF)</b></a> •
   <a href="#-visual-tour--screenshots">Visual Tour</a> •
   <a href="#-the-three-source-architecture">Architecture</a> •
   <a href="#-key-features">Features</a> •
@@ -427,6 +429,7 @@ Full methodology, iteration count, and raw execution telemetry are tracked in [*
 > 📸 **Verified Invariant Test Telemetry**: Live test execution and adversarial invariant tests pass with 100% success rate: [View Invariant Test Suite Telemetry](screenshots/04-test-suite-and-invariants.png).
 
 ### Security Documentation & Specifications
+* 📑 [**DriftWarden Project Report (Edition 2026)**](docs/driftwarden-project-report.pdf) — Complete 20-page engineering report detailing the three-source correlation matrix, pipeline architecture, CIS benchmark engine, empirical hardware benchmarks, and verified live proofs.
 * 🛡️ [**Security Model & Verification Matrix**](docs/security-model.md) — Comprehensive threat defense matrix verified by automated adversarial tests.
 * 🔍 [**STRIDE Threat Model**](docs/threat-model.md) — Threat actor taxonomy, attack surfaces, and mitigations.
 * 📐 [**Normalization Contract Specification**](docs/normalization-spec.md) — Formal specification of 8 core normalization invariants (ordering, type safety, null-awareness, default-equivalence, system tags, sensitive masking, idempotency, determinism).
