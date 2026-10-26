@@ -1,28 +1,23 @@
 ---
 name: Bug Report
-about: Create a report to help us improve DriftWarden
+about: Create a report to help us improve
 title: '[BUG] '
-labels: ['bug', 'triage']
+labels: bug
 assignees: ''
 ---
 
-**Describe the Bug**
+**Describe the bug**
 A clear and concise description of what the bug is.
 
 **To Reproduce**
 Steps to reproduce the behavior:
-1. Run command: `driftwarden scan ...`
-2. Configuration file / Terraform snippet:
-3. Error output or unexpected diff:
+1. Run command '...'
+2. With configuration '...'
+3. See error
 
-**Expected Behavior**
+**Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**Environment Information:**
-- DriftWarden Version (`driftwarden version`):
-- OS / Platform (e.g., Linux amd64, macOS arm64, Windows):
-- Terraform / OpenTofu Version:
-- AWS Region(s):
-
-**Additional Context**
-Add any other context about the problem here (e.g., whether double-read probe was enabled).
+**Environment:**
+- OS: [e.g. Ubuntu 24.04, macOS 15, Windows 11]
+- Version [e.g. v0.1.0]
